@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Quix</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --purple:#6C63FF; --teal:#00C9B1; --ink:#1A1A2E; --muted:#6B7280; --border:#E5E7EB; --soft:#F8F9FF; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fff; color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; line-height:1.8; }
+  nav { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; padding:16px 48px; background:rgba(255,255,255,0.97); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); z-index:100; }
+  .nav-logo { font-family:'Nunito',sans-serif; font-size:26px; font-weight:900; background:linear-gradient(135deg,var(--purple),var(--teal)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-decoration:none; }
+  .nav-back { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:14px; font-weight:600; transition:color 0.2s; }
+  .nav-back:hover { color:var(--purple); }
+  .page-hero { background:linear-gradient(135deg,#F0F4FF 0%,#E8FBF9 100%); padding:110px 48px 56px; border-bottom:1px solid var(--border); }
+  .page-hero-inner { max-width:760px; margin:0 auto; }
+  .page-tag { display:inline-block; background:rgba(108,99,255,0.1); color:var(--purple); font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:5px 14px; border-radius:100px; margin-bottom:16px; }
+  .page-hero h1 { font-family:'Nunito',sans-serif; font-size:clamp(30px,5vw,46px); font-weight:900; letter-spacing:-1px; line-height:1.1; }
+  .page-meta { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:16px; }
+  .content { max-width:760px; margin:0 auto; padding:56px 48px 100px; }
+  .section { margin-bottom:44px; }
+  .section h2 { font-family:'Nunito',sans-serif; font-size:19px; font-weight:800; color:var(--ink); margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .num { background:var(--purple); color:#fff; font-size:11px; font-weight:800; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  p { color:var(--muted); margin-bottom:14px; font-size:15px; }
+  ul { padding-left:0; margin-bottom:14px; list-style:none; }
+  ul li { color:var(--muted); font-size:15px; padding:9px 0 9px 26px; border-bottom:1px solid #F3F4F6; position:relative; }
+  ul li:last-child { border-bottom:none; }
+  ul li::before { content:'✓'; position:absolute; left:0; color:var(--teal); font-weight:800; }
+  ul li strong { color:var(--ink); font-weight:600; }
+  a { color:var(--purple); text-decoration:none; font-weight:500; }
+  a:hover { text-decoration:underline; }
+  .info-table { width:100%; border-collapse:collapse; margin:14px 0 22px; font-size:14px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+  .info-table tr:not(:last-child) td { border-bottom:1px solid var(--border); }
+  .info-table td { padding:12px 16px; }
+  .info-table td:first-child { font-weight:600; color:var(--ink); background:var(--soft); width:180px; }
+  .info-table td:last-child { color:var(--muted); }
+  hr { border:none; border-top:1px solid var(--border); margin:44px 0; }
+  footer { background:var(--soft); border-top:1px solid var(--border); padding:40px 48px; text-align:center; }
+  .footer-links { display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-bottom:14px; }
+  .footer-links a { color:var(--muted); text-decoration:none; font-size:14px; font-weight:500; transition:color 0.2s; }
+  .footer-links a:hover { color:var(--purple); }
+  .footer-copy { font-size:13px; color:#9CA3AF; }
+  @media(max-width:640px) { nav{padding:14px 20px;} .page-hero{padding:90px 20px 40px;} .content{padding:36px 20px 80px;} footer{padding:28px 20px;} }
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="index.html">Quix ⚡</a>
+  <a class="nav-back" href="index.html">← Back to Home</a>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-tag">Legal</div>
+    <h1>Privacy Policy</h1>
+    <div class="page-meta">
+      <span>📅 Last updated: March 12, 2026</span>
+      <span>·</span>
+      <span>👤 Developer: Gaurav Gaurav</span>
+      <span>·</span>
+      <span>📦 com.quix.app</span>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <h2><span class="num">1</span> Information We Collect</h2>
+    <table class="info-table">
+      <tr><td>Uploaded Files</td><td>PDFs, images, or text for AI quiz generation. Deleted from our servers immediately after quiz is generated.</td></tr>
+      <tr><td>Usage Data</td><td>Quiz scores, sessions, and in-app activity via Firebase Analytics.</td></tr>
+      <tr><td>Device Info</td><td>Device type and OS version via Firebase Crashlytics for bug reporting.</td></tr>
+      <tr><td>Payment Data</td><td>Processed by Razorpay. We only store transaction status and order IDs — never card or bank details.</td></tr>
+      <tr><td>Ad Data</td><td>Google AdMob may collect device identifiers to serve relevant ads (Teen-rated content only).</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> How We Use Your Information</h2>
+    <ul>
+      <li>To generate AI quiz questions from your uploaded content</li>
+      <li>To process subscription and pay-per-use payments</li>
+      <li>To track quiz scores and show your performance history</li>
+      <li>To fix bugs and improve app stability</li>
+      <li>To serve age-appropriate advertisements (Teen rating)</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Third-Party Services</h2>
+    <p>We do not sell your data. We share it only with these providers to operate the app:</p>
+    <table class="info-table">
+      <tr><td>Anthropic (AI)</td><td>Processes uploaded notes to generate quiz questions</td></tr>
+      <tr><td>Supabase</td><td>Stores subscription status and order records</td></tr>
+      <tr><td>Firebase</td><td>Analytics, crash reporting, remote config</td></tr>
+      <tr><td>Razorpay</td><td>Payment processing</td></tr>
+      <tr><td>Google AdMob</td><td>In-app advertisements</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Data Retention</h2>
+    <p>Uploaded files are deleted immediately after quiz generation. Quiz scores and subscription records are stored while your account is active. You may request deletion at any time.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Children's Privacy</h2>
+    <p>Quix is rated for Teen audiences (13+). We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us data, contact us and we will delete it promptly.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">6</span> Your Rights</h2>
+    <p>You may request access to, correction of, or deletion of your personal data at any time by emailing <a href="mailto:support@quix.app">support@quix.app</a>. We will respond within 30 days.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">7</span> Security</h2>
+    <p>All data in transit is encrypted via HTTPS/TLS. Payments are handled by Razorpay's PCI-DSS compliant infrastructure. We do not store payment card information.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">8</span> Changes to This Policy</h2>
+    <p>We may update this policy from time to time. The "Last updated" date at the top reflects the most recent revision. Continued use of the app constitutes acceptance.</p>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <h2><span class="num">9</span> Contact Us</h2>
+    <table class="info-table">
+      <tr><td>Email</td><td><a href="mailto:reverse454@gmail.com">reverse454@gmail.com</a></td></tr>
+      <tr><td>Response Time</td><td>Within 30 days for privacy requests</td></tr>
+      <tr><td>Developer</td><td>Gaurav Gaurav</td></tr>
+      <tr><td>Package</td><td>com.quix.app</td></tr>
+    </table>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="refund.html">Refund Policy</a>
+    <a href="terms.html">Terms of Use</a>
+    <a href="mailto:support@quix.app">Contact</a>
+  </div>
+  <p class="footer-copy">© 2026 Quix · Gaurav Gaurav · com.quix.app</p>
+</footer>
+</body>
+</html>
