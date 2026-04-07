@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quix — Dart & System Design Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0A0E1A;
+    --surface: #111827;
+    --surface2: #1A2235;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #E8EDF5;
+    --muted: #6B7A99;
+    --accent: #7C6EFA;
+    --blue: #4FC3F7;
+    --green: #4CAF7D;
+    --gold: #F4C430;
+    --red: #EF5350;
+    --orange: #F97316;
+    --purple: #A855F7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* Layout */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 260px; height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 24px 0;
+    z-index: 100;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 800;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--blue); }
+
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .nav-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--muted); letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 0 8px 6px;
+  }
+  .nav-item {
+    display: block; padding: 7px 10px;
+    border-radius: 8px; color: var(--muted);
+    text-decoration: none; font-size: 13px;
+    cursor: pointer; transition: all 0.15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: rgba(124,110,250,0.12);
+    color: var(--text);
+  }
+  .nav-item.active { color: var(--accent); font-weight: 600; }
+
+  .main {
+    margin-left: 260px;
+    max-width: 900px;
+    padding: 48px 48px 80px;
+    min-height: 100vh;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--text), var(--muted));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 700;
+    margin: 40px 0 16px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  h3 {
+    font-size: 16px; font-weight: 600;
+    margin: 24px 0 10px;
+    color: var(--blue);
+  }
+  p { margin-bottom: 14px; color: #B8C1D4; }
+
+  /* Code */
+  pre {
+    background: #0D1117;
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px 22px;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    position: relative;
+  }
+  pre .lang-label {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 10px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; letter-spacing: 0.5px;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.75;
+    color: #E8EDF5;
+  }
+  p code, li code {
+    background: rgba(124,110,250,0.15);
+    color: #C4B5FD;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+
+  /* Syntax highlighting */
+  .kw  { color: #FF7AB2; }  /* keywords */
+  .ty  { color: #FBBF24; }  /* types */
+  .fn  { color: #79C0FF; }  /* functions */
+  .st  { color: #A8FF78; }  /* strings */
+  .cm  { color: #6B7A99; font-style: italic; }  /* comments */
+  .nm  { color: #FCA5A5; }  /* numbers */
+  .op  { color: #C9D1D9; }  /* operators */
+  .bl  { color: #F97316; }  /* booleans/special */
+  .pr  { color: #C4B5FD; }  /* properties */
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin: 14px 0 20px;
+  }
+  .card.blue  { border-color: rgba(79,195,247,0.3); background: rgba(79,195,247,0.05); }
+  .card.green { border-color: rgba(76,175,125,0.3); background: rgba(76,175,125,0.05); }
+  .card.gold  { border-color: rgba(244,196,48,0.3);  background: rgba(244,196,48,0.05); }
+  .card.red   { border-color: rgba(239,83,80,0.3);   background: rgba(239,83,80,0.05); }
+  .card.purple{ border-color: rgba(168,85,247,0.3);  background: rgba(168,85,247,0.05); }
+
+  .card-title {
+    font-weight: 600; font-size: 13px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.blue   { background: var(--blue); }
+  .dot.green  { background: var(--green); }
+  .dot.gold   { background: var(--gold); }
+  .dot.red    { background: var(--red); }
+  .dot.purple { background: var(--purple); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 13px; }
+  th { background: var(--surface2); color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; padding: 10px 14px; text-align: left; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #B8C1D4; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Section */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Hero */
+  .hero-sub { color: var(--muted); font-size: 16px; margin-bottom: 32px; max-width: 560px; line-height: 1.6; }
+
+  /* Pill tags */
+  .pill {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+    margin: 2px;
+  }
+  .pill.blue   { background: rgba(79,195,247,0.15); color: var(--blue); }
+  .pill.green  { background: rgba(76,175,125,0.15); color: var(--green); }
+  .pill.gold   { background: rgba(244,196,48,0.15);  color: var(--gold); }
+  .pill.purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .pill.red    { background: rgba(239,83,80,0.15);   color: var(--red); }
+
+  ul, ol { padding-left: 20px; margin-bottom: 14px; color: #B8C1D4; }
+  li { margin-bottom: 5px; }
+
+  .flow-box {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin: 16px 0;
+  }
+  .flow-node {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 14px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+  }
+  .flow-arrow { color: var(--muted); font-size: 18px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 24px 20px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">⚡ Quix <span>Dev Guide</span></div>
+
+  <div class="nav-section">
+    <div class="nav-label">Dart Fundamentals</div>
+    <button class="nav-item active" onclick="show('dart-basics')">Variables &amp; Types</button>
+    <button class="nav-item" onclick="show('dart-async')">async / await / Future</button>
+    <button class="nav-item" onclick="show('dart-null')">Null Safety</button>
+    <button class="nav-item" onclick="show('dart-oop')">Classes &amp; OOP</button>
+    <button class="nav-item" onclick="show('dart-patterns')">Common Patterns</button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Flutter</div>
+    <button class="nav-item" onclick="show('flutter-widgets')">Widget Lifecycle</button>
+    <button class="nav-item" onclick="show('flutter-state')">State &amp; setState</button>
+    <button class="nav-item" onclick="show('flutter-nav')">Navigation</button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">System Design</div>
+    <button class="nav-item" onclick="show('design-singleton')">Singleton Pattern</button>
+    <button class="nav-item" onclick="show('design-observer')">Observer / Notifier</button>
+    <button class="nav-item" onclick="show('design-service')">Service Layer</button>
+    <button class="nav-item" onclick="show('design-firebase')">Firebase Architecture</button>
+    <button class="nav-item" onclick="show('design-fallback')">AI Fallback Chain</button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Quix Code Flow</div>
+    <button class="nav-item" onclick="show('flow-startup')">App Startup Flow</button>
+    <button class="nav-item" onclick="show('flow-quiz')">Quiz Play Flow</button>
+    <button class="nav-item" onclick="show('flow-ai')">AI Generation Flow</button>
+    <button class="nav-item" onclick="show('flow-points')">Points &amp; Leaderboard</button>
+    <button class="nav-item" onclick="show('flow-debug')">Reading Errors</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dart-basics" class="section active">
+  <h1>Variables &amp; Types</h1>
+  <p class="hero-sub">Dart is a statically typed language — every variable has a type the compiler knows at build time. If you've used Java, TypeScript, or Kotlin, most of this will feel familiar.</p>
+
+  <h2>Declaring variables</h2>
+  <pre><code><span class="cm">// var — Dart infers the type from what you assign</span>
+<span class="kw">var</span> name = <span class="st">'Gaurav'</span>;       <span class="cm">// Dart knows this is a String</span>
+<span class="kw">var</span> count = <span class="nm">42</span>;             <span class="cm">// Dart knows this is an int</span>
+
+<span class="cm">// Explicit type — same result, more readable</span>
+<span class="ty">String</span> name = <span class="st">'Gaurav'</span>;
+<span class="ty">int</span> count = <span class="nm">42</span>;
+<span class="ty">double</span> score = <span class="nm">9.5</span>;
+<span class="ty">bool</span> isLoading = <span class="bl">false</span>;
+
+<span class="cm">// final — can only be assigned once (like Java's final)</span>
+<span class="kw">final</span> uid = FirebaseAuth.instance.currentUser?.uid;
+<span class="cm">// uid can never be changed after this line</span>
+
+<span class="cm">// const — compile-time constant, known before app runs</span>
+<span class="kw">const</span> maxPages = <span class="nm">100</span>;
+<span class="kw">const</span> appName = <span class="st">'Quix'</span>;
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>In Quix code you'll see</div>
+    <code>static const _kBasicTierPageLimit = 10;</code> — a constant that can never change, defined inside a class, private (starts with _).
+  </div>
+
+  <h2>Collections</h2>
+  <pre><code><span class="cm">// List — ordered, like JavaScript array</span>
+<span class="ty">List</span>&lt;<span class="ty">String</span>&gt; tierNames = [<span class="st">'Spark'</span>, <span class="st">'Flash'</span>, <span class="st">'Pro'</span>, <span class="st">'Research'</span>];
+tierNames[<span class="nm">0</span>];          <span class="cm">// 'Spark'</span>
+tierNames.length;       <span class="cm">// 4</span>
+
+<span class="cm">// Map — key-value pairs, like JavaScript object or Java HashMap</span>
+<span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">dynamic</span>&gt; pack = {
+  <span class="st">'title'</span>: <span class="st">'🧠 Physics'</span>,
+  <span class="st">'questionCount'</span>: <span class="nm">20</span>,
+  <span class="st">'isAiGenerated'</span>: <span class="bl">true</span>,
+};
+pack[<span class="st">'title'</span>];           <span class="cm">// '🧠 Physics'</span>
+
+<span class="cm">// Set — unique values only, no duplicates</span>
+<span class="ty">Set</span>&lt;<span class="ty">int</span>&gt; selectedPages = {<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>};
+selectedPages.add(<span class="nm">2</span>);   <span class="cm">// still {1, 2, 3} — duplicates ignored</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card gold">
+    <div class="card-title"><span class="dot gold"></span>dynamic vs Object</div>
+    <code>dynamic</code> means "I don't know the type at compile time — trust me at runtime". You'll see <code>Map&lt;String, dynamic&gt;</code> everywhere in Firebase reads because Firebase returns JSON which can have mixed types.
+  </div>
+
+  <h2>String interpolation</h2>
+  <pre><code><span class="kw">final</span> uid = <span class="st">'abc123'</span>;
+<span class="kw">final</span> path = <span class="st">'users/<span class="bl">$uid</span>/packs'</span>;          <span class="cm">// users/abc123/packs</span>
+
+<span class="cm">// For expressions (not just variables), use ${}</span>
+<span class="kw">final</span> msg = <span class="st">'<span class="bl">${tierNames[0]}</span> plan selected'</span>;  <span class="cm">// Spark plan selected</span>
+<span class="kw">final</span> pct = <span class="st">'<span class="bl">${(0.75 * 100).round()}</span>%'</span>;         <span class="cm">// 75%</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Type casting</h2>
+  <pre><code><span class="cm">// Firebase returns everything as Object? — you must cast to use it</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> ref.get();
+<span class="kw">final</span> raw = snap.value <span class="kw">as</span> <span class="ty">Map</span>;                     <span class="cm">// hard cast — crashes if wrong type</span>
+<span class="kw">final</span> pts = (snap.value <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;    <span class="cm">// safe cast</span>
+
+<span class="cm">// Reading from Map safely (common Firebase pattern)</span>
+<span class="kw">final</span> data = <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="kw">dynamic</span>&gt;.from(snap.value <span class="kw">as</span> <span class="ty">Map</span>);
+<span class="kw">final</span> points = (data[<span class="st">'points'</span>] <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;
+<span class="cm">//              ↑ cast to num   ↑ null-safe  ↑ to int  ↑ default 0</span>
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dart-async" class="section">
+  <h1>async / await / Future</h1>
+  <p class="hero-sub">Almost everything in Quix is asynchronous — Firebase reads, AI calls, file picks. Understanding this is the most important thing for debugging.</p>
+
+  <h2>What is a Future?</h2>
+  <p>A <code>Future&lt;T&gt;</code> is a promise that a value of type T will be available later. Like JavaScript's Promise.</p>
+  <pre><code><span class="cm">// This function doesn't block — it returns immediately</span>
+<span class="cm">// with a Future that completes later</span>
+<span class="ty">Future</span>&lt;<span class="ty">int</span>&gt; getPoints() <span class="kw">async</span> {
+  <span class="kw">final</span> snap = <span class="kw">await</span> FirebaseDatabase.instance
+      .ref(<span class="st">'users/$uid/points'</span>)
+      .get();
+  <span class="kw">return</span> (snap.value <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;
+}
+
+<span class="cm">// Using it:</span>
+<span class="kw">final</span> pts = <span class="kw">await</span> getPoints();  <span class="cm">// waits here until Firebase responds</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card red">
+    <div class="card-title"><span class="dot red"></span>Most common async bug</div>
+    Forgetting <code>await</code>. Without it, you get the Future object, not the value. The variable will be of type <code>Future&lt;int&gt;</code> instead of <code>int</code> and the compiler will warn you.
+  </div>
+
+  <h2>Parallel execution with Future.wait</h2>
+  <pre><code><span class="cm">// Sequential — takes 45s total (each waits for previous)</span>
+<span class="kw">final</span> r1 = <span class="kw">await</span> _tryGemini(prompt, count);    <span class="cm">// 15s</span>
+<span class="kw">final</span> r2 = <span class="kw">await</span> _tryClaudeHaiku(prompt, count); <span class="cm">// 15s</span>
+<span class="kw">final</span> r3 = <span class="kw">await</span> _tryGroqLlama(prompt, count);  <span class="cm">// 15s</span>
+
+<span class="cm">// Parallel — takes ~15s total (all run at the same time)</span>
+<span class="kw">final</span> results = <span class="kw">await</span> Future.wait([
+  _tryGemini(prompt, count),
+  _tryClaudeHaiku(prompt, count),
+  _tryGroqLlama(prompt, count),
+]);
+<span class="cm">// results[0] = Gemini result</span>
+<span class="cm">// results[1] = Claude result</span>
+<span class="cm">// results[2] = Groq result</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>unawaited — fire and forget</h2>
+  <pre><code><span class="cm">// With await — blocks until ambient starts (user waits)</span>
+<span class="kw">await</span> SoundService().startAmbient();
+
+<span class="cm">// With unawaited — starts ambient in background, moves on immediately</span>
+unawaited(SoundService().startAmbient());
+
+<span class="cm">// Why? Ambient music starting has nothing to do with showing the UI.</span>
+<span class="cm">// Don't make the user wait for it.</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>timeout — don't wait forever</h2>
+  <pre><code><span class="cm">// Without timeout — if Firebase is slow, UI hangs forever</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> ref.get();
+
+<span class="cm">// With timeout — fails after 4 seconds, shows error instead of hanging</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> ref.get().timeout(
+  <span class="kw">const</span> Duration(seconds: <span class="nm">4</span>),
+  onTimeout: () => <span class="kw">throw</span> TimeoutException(<span class="st">'Firebase too slow'</span>),
+);
+
+<span class="cm">// Pattern in Quix — timeout + catch + default value</span>
+<span class="kw">try</span> {
+  <span class="kw">final</span> snap = <span class="kw">await</span> ref.get().timeout(Duration(seconds: <span class="nm">3</span>));
+  <span class="kw">return</span> (snap.value <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;
+} <span class="kw">catch</span> (_) {
+  <span class="kw">return</span> <span class="nm">0</span>;  <span class="cm">// on any error, return 0</span>
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Stream — continuous data flow</h2>
+  <pre><code><span class="cm">// Stream is like a Future that fires multiple times.</span>
+<span class="cm">// Firebase RTDB uses streams for real-time updates.</span>
+
+<span class="cm">// Listen to a stream</span>
+FirebaseDatabase.instance
+    .ref(<span class="st">'leaderboard'</span>)
+    .onValue                          <span class="cm">// stream of database events</span>
+    .listen((event) {
+      <span class="cm">// this runs every time leaderboard changes</span>
+      <span class="kw">final</span> data = event.snapshot.value;
+      setState(() => _leaderboard = data);
+    });
+
+<span class="cm">// FCM push notifications also use a stream</span>
+FirebaseMessaging.onMessage.listen((msg) {
+  <span class="cm">// this runs every time a push arrives while app is open</span>
+});
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dart-null" class="section">
+  <h1>Null Safety</h1>
+  <p class="hero-sub">Dart's null safety is the reason you see so many <code>?</code> and <code>!</code> symbols. It prevents null pointer crashes at compile time — the compiler forces you to handle nulls.</p>
+
+  <h2>Nullable vs non-nullable</h2>
+  <pre><code><span class="cm">// Non-nullable — can NEVER be null, compiler enforces this</span>
+<span class="ty">String</span> name = <span class="st">'Gaurav'</span>;
+name = <span class="bl">null</span>;             <span class="cm">// ❌ compile error</span>
+
+<span class="cm">// Nullable — add ? to allow null</span>
+<span class="ty">String</span>? name = <span class="bl">null</span>;    <span class="cm">// ✅ allowed</span>
+name = <span class="st">'Gaurav'</span>;       <span class="cm">// also allowed</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>The ? operator — safe access</h2>
+  <pre><code><span class="kw">final</span> user = FirebaseAuth.instance.currentUser; <span class="cm">// User? (might be null)</span>
+
+<span class="cm">// Without ?: crashes if user is null</span>
+<span class="kw">final</span> uid = user.uid;     <span class="cm">// ❌ compiler error — user might be null</span>
+
+<span class="cm">// With ?. — returns null if user is null, uid if not</span>
+<span class="kw">final</span> uid = user?.uid;    <span class="cm">// ✅ String? — might be null</span>
+
+<span class="cm">// Chaining — each ?. short-circuits on null</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> ref.get();
+<span class="kw">final</span> text = snap.value?.[<span class="st">'content'</span>]?.[<span class="nm">0</span>]?.[<span class="st">'text'</span>] <span class="kw">as</span> <span class="ty">String</span>?;
+<span class="cm">// Reads nested JSON safely — returns null at first null instead of crashing</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>The ?? operator — null coalescing</h2>
+  <pre><code><span class="cm">// ?? means "if null, use this default instead"</span>
+<span class="kw">final</span> pts = snap.value ?? <span class="nm">0</span>;        <span class="cm">// 0 if snap.value is null</span>
+<span class="kw">final</span> name = user?.uid ?? <span class="st">'Guest'</span>; <span class="cm">// 'Guest' if uid is null</span>
+
+<span class="cm">// Real Quix code</span>
+<span class="kw">final</span> points = (data[<span class="st">'points'</span>] <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;
+<span class="cm">//              ↑ cast null-safely      ↑ convert    ↑ default</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>The ! operator — force unwrap (dangerous)</h2>
+  <pre><code><span class="cm">// ! says "I guarantee this is not null — trust me"</span>
+<span class="cm">// Crashes at runtime if you're wrong</span>
+
+<span class="kw">final</span> uid = FirebaseAuth.instance.currentUser!.uid;
+<span class="cm">// If currentUser is null → NullPointerException crash</span>
+
+<span class="cm">// When is it safe? Only when you've JUST checked for null</span>
+<span class="kw">if</span> (user != <span class="bl">null</span>) {
+  <span class="kw">final</span> uid = user!.uid;  <span class="cm">// ✅ safe — we just checked</span>
+}
+
+<span class="cm">// Better — use the safe pattern instead:</span>
+<span class="kw">final</span> uid = user?.uid;
+<span class="kw">if</span> (uid == <span class="bl">null</span>) <span class="kw">return</span>;
+<span class="cm">// uid is now guaranteed non-null by Dart's flow analysis</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card red">
+    <div class="card-title"><span class="dot red"></span>When you see a null crash in Flutter</div>
+    Logcat will say <code>Null check operator used on a null value</code>. Find the <code>!</code> that caused it and replace with a null check or <code>??</code> default.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dart-oop" class="section">
+  <h1>Classes &amp; OOP</h1>
+  <p class="hero-sub">Every service, screen, and widget in Quix is a class. Understanding how Dart classes work unlocks the entire codebase.</p>
+
+  <h2>Basic class anatomy</h2>
+  <pre><code><span class="kw">class</span> <span class="ty">SoundService</span> {
+
+  <span class="cm">// ── Singleton pattern (one instance for whole app) ─────────────────────</span>
+  <span class="kw">static final</span> <span class="ty">SoundService</span> _instance = <span class="ty">SoundService</span>._();
+  <span class="kw">factory</span> <span class="ty">SoundService</span>() => _instance;
+  <span class="ty">SoundService</span>._();             <span class="cm">// private constructor — can't use new SoundService()</span>
+
+  <span class="cm">// ── Fields (instance variables) ─────────────────────────────────────────</span>
+  <span class="ty">bool</span> _soundEnabled = <span class="bl">true</span>;   <span class="cm">// private (starts with _)</span>
+
+  <span class="cm">// ── Getter — reads a value (no parentheses when calling) ─────────────────</span>
+  <span class="ty">bool</span> <span class="kw">get</span> soundEnabled => _soundEnabled;
+
+  <span class="cm">// ── Setter — called when you assign: service.soundEnabled = false ─────────</span>
+  <span class="kw">set</span> soundEnabled(<span class="ty">bool</span> v) {
+    _soundEnabled = v;
+    _persist(<span class="st">'quix_sound_on'</span>, v);
+  }
+
+  <span class="cm">// ── Method ─────────────────────────────────────────────────────────────────</span>
+  <span class="ty">Future</span>&lt;<span class="kw">void</span>&gt; startAmbient() <span class="kw">async</span> {
+    <span class="kw">if</span> (!_soundEnabled) <span class="kw">return</span>;  <span class="cm">// guard clause</span>
+    <span class="cm">// ...</span>
+  }
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Inheritance — extends</h2>
+  <pre><code><span class="cm">// StatefulWidget is Flutter's base class for widgets with state</span>
+<span class="kw">class</span> <span class="ty">QuizPlayScreen</span> <span class="kw">extends</span> <span class="ty">StatefulWidget</span> {
+  <span class="kw">const</span> <span class="ty">QuizPlayScreen</span>({<span class="kw">super</span>.key});  <span class="cm">// passes key to parent</span>
+
+  <span class="kw">@override</span>  <span class="cm">// annotation: I'm overriding a parent method</span>
+  <span class="ty">State</span>&lt;<span class="ty">QuizPlayScreen</span>&gt; createState() => <span class="ty">_QuizPlayScreenState</span>();
+}
+
+<span class="kw">class</span> <span class="ty">_QuizPlayScreenState</span> <span class="kw">extends</span> <span class="ty">State</span>&lt;<span class="ty">QuizPlayScreen</span>&gt; {
+  <span class="kw">@override</span>
+  <span class="kw">void</span> initState() {          <span class="cm">// runs once when screen first appears</span>
+    <span class="kw">super</span>.initState();        <span class="cm">// always call parent first</span>
+    _loadData();
+  }
+
+  <span class="kw">@override</span>
+  <span class="kw">void</span> dispose() {           <span class="cm">// runs when screen is destroyed</span>
+    _controller.dispose();   <span class="cm">// always clean up controllers</span>
+    <span class="kw">super</span>.dispose();         <span class="cm">// always call parent last</span>
+  }
+
+  <span class="kw">@override</span>
+  <span class="ty">Widget</span> build(<span class="ty">BuildContext</span> context) {   <span class="cm">// runs every setState()</span>
+    <span class="kw">return</span> Scaffold(child: Text(<span class="st">'Quiz'</span>));
+  }
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Enum — named set of values</h2>
+  <pre><code><span class="cm">// Enums prevent typos and make switch statements exhaustive</span>
+<span class="kw">enum</span> <span class="ty">QuizMode</span> { solo, multiplayer, study }
+<span class="kw">enum</span> <span class="ty">QuizTier</span>  { free, basic, premium }
+
+<span class="cm">// Usage</span>
+<span class="ty">QuizMode</span> _mode = <span class="ty">QuizMode</span>.solo;
+
+<span class="kw">switch</span> (_mode) {
+  <span class="kw">case</span> <span class="ty">QuizMode</span>.solo:
+    <span class="cm">// solo logic</span>
+  <span class="kw">case</span> <span class="ty">QuizMode</span>.multiplayer:
+    <span class="cm">// multiplayer logic</span>
+  <span class="kw">case</span> <span class="ty">QuizMode</span>.study:
+    <span class="cm">// study logic</span>
+}
+<span class="cm">// Compiler warns if you forget a case</span>
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dart-patterns" class="section">
+  <h1>Common Dart Patterns</h1>
+  <p class="hero-sub">These patterns appear dozens of times in Quix. Recognising them speeds up reading by 10x.</p>
+
+  <h2>Arrow functions — single expression</h2>
+  <pre><code><span class="cm">// Long form</span>
+<span class="ty">String</span> <span class="fn">dayKey</span>(<span class="ty">DateTime</span> d) {
+  <span class="kw">return</span> <span class="st">'${d.year}-${d.month.toString().padLeft(2, '0')}'</span>;
+}
+
+<span class="cm">// Arrow shorthand — same thing, one line</span>
+<span class="ty">String</span> <span class="fn">dayKey</span>(<span class="ty">DateTime</span> d) =>
+    <span class="st">'${d.year}-${d.month.toString().padLeft(2, '0')}'</span>;
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Spread operator and collection-if</h2>
+  <pre><code><span class="cm">// Collection-if — conditionally include widgets in a list</span>
+Column(children: [
+  Text(<span class="st">'Always shown'</span>),
+  <span class="kw">if</span> (_totalPdfPages > <span class="nm">1</span>) ...[       <span class="cm">// only if PDF has multiple pages</span>
+    SizedBox(height: <span class="nm">16</span>),
+    _buildPagePicker(),              <span class="cm">// these two only render conditionally</span>
+  ],
+  _buildGenerateButton(),           <span class="cm">// always shown</span>
+]);
+
+<span class="cm">// ... spread — inserts all items from a list into another list</span>
+<span class="kw">final</span> items = [<span class="nm">1</span>, <span class="nm">2</span>];
+<span class="kw">final</span> more  = [...items, <span class="nm">3</span>, <span class="nm">4</span>];   <span class="cm">// [1, 2, 3, 4]</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Closures and callbacks</h2>
+  <pre><code><span class="cm">// A function passed as a parameter — common in Flutter</span>
+GestureDetector(
+  onTap: () {                    <span class="cm">// anonymous function (closure)</span>
+    setState(() => _tab = _Tab.document);
+  },
+  child: Text(<span class="st">'Document'</span>),
+);
+
+<span class="cm">// Arrow shorthand</span>
+GestureDetector(
+  onTap: () => setState(() => _tab = _Tab.document),
+  child: Text(<span class="st">'Document'</span>),
+);
+
+<span class="cm">// Passing a named function</span>
+GestureDetector(
+  onTap: _pickFile,              <span class="cm">// no (), just the reference</span>
+  child: Text(<span class="st">'Pick file'</span>),
+);
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>late — deferred initialisation</h2>
+  <pre><code><span class="cm">// late tells Dart: "this will be set before first use, trust me"</span>
+<span class="kw">late</span> <span class="ty">AnimationController</span> _ctrl;
+
+<span class="kw">@override</span>
+<span class="kw">void</span> initState() {
+  <span class="kw">super</span>.initState();
+  _ctrl = AnimationController(vsync: <span class="kw">this</span>, ...); <span class="cm">// initialised here</span>
+}
+
+<span class="cm">// Crash if you forget to initialise before use:</span>
+<span class="cm">// LateInitializationError: Field '_ctrl' has not been initialized</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>List operations — map, where, fold</h2>
+  <pre><code><span class="kw">final</span> questions = [q1, q2, q3, q4];
+
+<span class="cm">// .map() — transform each item</span>
+<span class="kw">final</span> maps = questions.map((q) => q.toMap()).toList();
+<span class="cm">// Each AiQuestion converted to Map for Firebase storage</span>
+
+<span class="cm">// .where() — filter items</span>
+<span class="kw">final</span> correct = questions.where((q) => q.correctIndex == selected).toList();
+
+<span class="cm">// .fold() — reduce to single value</span>
+<span class="kw">final</span> maxQ = entries.fold&lt;<span class="ty">int</span>&gt;(<span class="nm">0</span>, (max, e) {
+  <span class="kw">return</span> e.quizzes > max ? e.quizzes : max;
+});
+
+<span class="cm">// .any() — true if at least one matches</span>
+<span class="kw">final</span> hasGoogle = user.providerData
+    .any((p) => p.providerId == <span class="st">'google.com'</span>);
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flutter-widgets" class="section">
+  <h1>Widget Lifecycle</h1>
+  <p class="hero-sub">In Flutter, everything on screen is a Widget. Understanding the lifecycle tells you when to load data, when to clean up, and why your data sometimes appears blank.</p>
+
+  <h2>StatelessWidget vs StatefulWidget</h2>
+  <table>
+    <tr><th>StatelessWidget</th><th>StatefulWidget</th></tr>
+    <tr><td>No mutable state</td><td>Has data that changes</td></tr>
+    <tr><td>build() called once</td><td>build() called on every setState()</td></tr>
+    <tr><td>Faster</td><td>Slower but necessary</td></tr>
+    <tr><td>_MiniStat, _PrefToggle in Quix</td><td>AiQuizScreen, HomeScreen, etc.</td></tr>
+  </table>
+
+  <h2>StatefulWidget lifecycle</h2>
+  <pre><code><span class="kw">class</span> <span class="ty">_ProgressDashboardState</span> <span class="kw">extends</span> <span class="ty">State</span>&lt;<span class="ty">ProgressDashboardScreen</span>&gt; {
+
+  <span class="cm">// 1️⃣  CONSTRUCTOR — runs first, before widget is on screen</span>
+  <span class="cm">//     Use for: declaring variables</span>
+  <span class="ty">bool</span> _loading = <span class="bl">true</span>;
+  <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="ty">dynamic</span>&gt; _data = {};
+
+  <span class="cm">// 2️⃣  initState — runs once, widget just mounted</span>
+  <span class="cm">//     Use for: loading data, setting up controllers, subscriptions</span>
+  <span class="kw">@override</span>
+  <span class="kw">void</span> initState() {
+    <span class="kw">super</span>.initState();          <span class="cm">// MUST be first line</span>
+    _barCtrl = AnimationController(vsync: <span class="kw">this</span>, ...);
+    _loadData();                <span class="cm">// start async load</span>
+  }
+
+  <span class="cm">// 3️⃣  build — runs on first render AND every setState()</span>
+  <span class="cm">//     Keep this fast — no heavy work here</span>
+  <span class="kw">@override</span>
+  <span class="ty">Widget</span> build(<span class="ty">BuildContext</span> context) {
+    <span class="kw">return</span> _loading ? CircularProgressIndicator() : _buildContent();
+  }
+
+  <span class="cm">// 4️⃣  dispose — runs when screen is popped/destroyed</span>
+  <span class="cm">//     Use for: cancelling streams, disposing controllers</span>
+  <span class="kw">@override</span>
+  <span class="kw">void</span> dispose() {
+    _barCtrl.dispose();        <span class="cm">// MUST dispose every AnimationController</span>
+    _subscription?.cancel();   <span class="cm">// MUST cancel streams</span>
+    <span class="kw">super</span>.dispose();           <span class="cm">// MUST be last line</span>
+  }
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card red">
+    <div class="card-title"><span class="dot red"></span>Most common lifecycle bug</div>
+    Calling <code>setState()</code> after <code>dispose()</code>. Happens when an async function completes after the user navigated away. Always check <code>if (!mounted) return;</code> after any <code>await</code> before calling <code>setState()</code>.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flutter-state" class="section">
+  <h1>State &amp; setState</h1>
+  <p class="hero-sub">State is data that can change. When state changes, Flutter redraws the widget. setState() is how you tell Flutter "something changed, redraw now".</p>
+
+  <h2>How setState works</h2>
+  <pre><code><span class="kw">class</span> <span class="ty">_AiQuizScreenState</span> ... {
+  <span class="ty">bool</span> _isProcessing = <span class="bl">false</span>;   <span class="cm">// state variable</span>
+  <span class="ty">String</span> _spinnerText = <span class="st">''</span>;
+
+  <span class="kw">void</span> _startProcessing() {
+    setState(() {                  <span class="cm">// ← schedules a rebuild</span>
+      _isProcessing = <span class="bl">true</span>;      <span class="cm">// change state inside here</span>
+      _spinnerText = <span class="st">'Loading...'</span>;
+    });
+    <span class="cm">// Flutter calls build() again</span>
+    <span class="cm">// build() sees _isProcessing = true → shows spinner</span>
+  }
+}
+
+<span class="cm">// In build():</span>
+<span class="kw">return</span> _isProcessing ? _buildSpinner() : _buildForm();
+<span class="cm">// Switches between spinner and form automatically when setState fires</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>ValueNotifier — observable value</h2>
+  <pre><code><span class="cm">// ValueNotifier is a lightweight "observable" — listeners run when value changes</span>
+<span class="cm">// Used in Quix for points display on home screen</span>
+
+<span class="cm">// In PointsService (global):</span>
+<span class="kw">static final</span> <span class="ty">ValueNotifier</span>&lt;<span class="ty">int</span>&gt; pointsNotifier = <span class="ty">ValueNotifier</span>&lt;<span class="ty">int</span>&gt;(<span class="nm">0</span>);
+
+<span class="cm">// When points change (after quiz, after purchase):</span>
+pointsNotifier.value = newPoints;    <span class="cm">// ← triggers all listeners</span>
+
+<span class="cm">// In HomeScreen (UI listens):</span>
+<span class="ty">ValueListenableBuilder</span>&lt;<span class="ty">int</span>&gt;(
+  valueListenable: PointsService.pointsNotifier,
+  builder: (context, points, _) {
+    <span class="cm">// runs every time pointsNotifier.value changes</span>
+    <span class="kw">return</span> Text(<span class="st">'$points pts'</span>);
+  },
+)
+<span class="cm">// No setState() needed — the notifier drives the UI rebuild automatically</span>
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flutter-nav" class="section">
+  <h1>Navigation</h1>
+  <p class="hero-sub">Flutter uses a stack of screens. Push adds a screen, pop removes it. Understanding navigation explains why data sometimes gets lost between screens.</p>
+
+  <h2>Push and pop</h2>
+  <pre><code><span class="cm">// Push — go to new screen</span>
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) => QuizPlayScreen(pack: pack),
+));
+
+<span class="cm">// Pop — go back</span>
+Navigator.pop(context);
+
+<span class="cm">// Pop with a return value</span>
+Navigator.pop(context, <span class="st">'play'</span>);   <span class="cm">// returns 'play' to caller</span>
+
+<span class="cm">// Caller reads the return value</span>
+<span class="kw">final</span> action = <span class="kw">await</span> showDialog(
+  context: context,
+  builder: (_) => _AiPackSavedDialog(...),
+);
+<span class="cm">// action is 'play', 'packs', or null (if dismissed)</span>
+<span class="kw">if</span> (action == <span class="st">'play'</span>) { <span class="cm">/* launch quiz */</span> }
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>pushReplacement — replace current screen</h2>
+  <pre><code><span class="cm">// After quiz ends — don't let user press back to quiz screen</span>
+Navigator.pushReplacement(context, MaterialPageRoute(
+  builder: (_) => <span class="kw">const</span> HomeScreen(),
+));
+<span class="cm">// Stack before: Home → AiQuiz → QuizPlay</span>
+<span class="cm">// Stack after:  Home → QuizPlay (AiQuiz is gone)</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Passing data between screens</h2>
+  <pre><code><span class="cm">// Constructor parameters — most common in Quix</span>
+<span class="kw">class</span> <span class="ty">QuizPlayScreen</span> <span class="kw">extends</span> <span class="ty">StatefulWidget</span> {
+  <span class="kw">final</span> <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="kw">dynamic</span>&gt; pack;   <span class="cm">// data passed in</span>
+  <span class="kw">final</span> <span class="ty">QuizMode</span> quizMode;
+
+  <span class="kw">const</span> <span class="ty">QuizPlayScreen</span>({
+    <span class="kw">required</span> <span class="kw">this</span>.pack,           <span class="cm">// required — must be provided</span>
+    <span class="kw">required</span> <span class="kw">this</span>.quizMode,
+    <span class="kw">this</span>.isRapidFire = <span class="bl">false</span>,    <span class="cm">// optional with default</span>
+  });
+}
+
+<span class="cm">// When navigating:</span>
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) => QuizPlayScreen(
+    pack: myPack,
+    quizMode: QuizMode.solo,
+    <span class="cm">// isRapidFire not provided → defaults to false</span>
+  ),
+));
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="design-singleton" class="section">
+  <h1>Singleton Pattern</h1>
+  <p class="hero-sub">Quix uses singletons for every service class. The singleton ensures there is exactly one instance shared across the entire app — so SoundService settings, Firebase connections, and billing state are never duplicated.</p>
+
+  <h2>How Quix implements singletons</h2>
+  <pre><code><span class="kw">class</span> <span class="ty">SoundService</span> {
+  <span class="cm">// 1. Private static instance — created once, stored forever</span>
+  <span class="kw">static final</span> <span class="ty">SoundService</span> _instance = <span class="ty">SoundService</span>._();
+
+  <span class="cm">// 2. Factory constructor — returns the same instance every time</span>
+  <span class="kw">factory</span> <span class="ty">SoundService</span>() => _instance;
+
+  <span class="cm">// 3. Private real constructor — only runs once</span>
+  <span class="ty">SoundService</span>._() {
+    _configurePlayers();   <span class="cm">// setup runs once at startup</span>
+  }
+}
+
+<span class="cm">// Usage anywhere in the app:</span>
+SoundService().startAmbient();   <span class="cm">// always the SAME SoundService object</span>
+SoundService().stopAmbient();    <span class="cm">// same object, same _ambientPlayer</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Named singleton (.instance)</h2>
+  <pre><code><span class="cm">// Some services use .instance instead of factory constructor</span>
+<span class="kw">class</span> <span class="ty">BillingService</span> {
+  <span class="ty">BillingService</span>._();
+  <span class="kw">static final</span> <span class="ty">BillingService</span> instance = <span class="ty">BillingService</span>._();
+}
+
+<span class="cm">// Usage:</span>
+BillingService.instance.purchase(kProductResearchProMonthly);
+NotificationService.instance.scheduleDailyReminder(hour: <span class="nm">8</span>, minute: <span class="nm">0</span>);
+GoogleAuthService.instance.linkGoogleAccount();
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>Why singleton matters for debugging</div>
+    If sound is playing even after toggle, check: did <code>_soundEnabled</code> get set on the singleton, or did you accidentally create a new instance? If you see <code>SoundService()</code> vs <code>SoundService.instance</code> — they may be different patterns. In Quix, <code>SoundService()</code> uses factory so it's always the same object.
+  </div>
+
+  <h2>All singletons in Quix</h2>
+  <table>
+    <tr><th>Class</th><th>Access pattern</th><th>Purpose</th></tr>
+    <tr><td><code>SoundService</code></td><td><code>SoundService()</code></td><td>Audio playback</td></tr>
+    <tr><td><code>BillingService</code></td><td><code>BillingService.instance</code></td><td>IAP purchases</td></tr>
+    <tr><td><code>NotificationService</code></td><td><code>NotificationService.instance</code></td><td>Push notifications</td></tr>
+    <tr><td><code>GoogleAuthService</code></td><td><code>GoogleAuthService.instance</code></td><td>Google Sign-In</td></tr>
+    <tr><td><code>PremiumTierService</code></td><td><code>PremiumTierService.instance</code></td><td>AI tier checks</td></tr>
+    <tr><td><code>DiagramService</code></td><td><code>DiagramService.instance</code></td><td>PDF extraction</td></tr>
+    <tr><td><code>AdService</code></td><td><code>AdService()</code></td><td>AdMob ads</td></tr>
+    <tr><td><code>TesterService</code></td><td><code>TesterService.instance</code></td><td>Dev UID whitelist</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="design-observer" class="section">
+  <h1>Observer Pattern — ValueNotifier</h1>
+  <p class="hero-sub">The Observer pattern means: "tell me when something changes". Quix uses ValueNotifier for this. The home screen's live points display works entirely through this pattern without any explicit data fetching.</p>
+
+  <h2>The pattern in Quix</h2>
+  <div class="flow-box">
+    <div class="flow-node">User answers correctly</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">PointsService.applyDelta()</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">pointsNotifier.value = newPts</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">HomeScreen rebuilds</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Shows new score</div>
+  </div>
+
+  <pre><code><span class="cm">// ── PUBLISHER (PointsService) ──────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="ty">PointsService</span> {
+  <span class="cm">// Global notifier — anyone in the app can listen to this</span>
+  <span class="kw">static final</span> <span class="ty">ValueNotifier</span>&lt;<span class="ty">int</span>&gt; pointsNotifier = <span class="ty">ValueNotifier</span>(<span class="nm">0</span>);
+
+  <span class="kw">static</span> <span class="kw">void</span> updatePoints(<span class="ty">int</span> newPoints) {
+    pointsNotifier.value = newPoints;  <span class="cm">// all listeners instantly notified</span>
+  }
+}
+
+<span class="cm">// ── SUBSCRIBER (HomeScreen) ────────────────────────────────────────────</span>
+<span class="kw">class</span> <span class="ty">_HomeScreenState</span> ... {
+
+  <span class="kw">@override</span>
+  <span class="kw">void</span> initState() {
+    <span class="kw">super</span>.initState();
+    <span class="cm">// Subscribe — this function runs every time points change</span>
+    PointsService.pointsNotifier.addListener(_onPointsChanged);
+  }
+
+  <span class="kw">void</span> _onPointsChanged() {
+    setState(() {
+      _displayPoints = PointsService.pointsNotifier.value;
+    });
+  }
+
+  <span class="kw">@override</span>
+  <span class="kw">void</span> dispose() {
+    <span class="cm">// MUST unsubscribe or you'll get setState after dispose crash</span>
+    PointsService.pointsNotifier.removeListener(_onPointsChanged);
+    <span class="kw">super</span>.dispose();
+  }
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>themeNotifier — global theme switching</h2>
+  <pre><code><span class="cm">// main.dart — global theme notifier</span>
+<span class="kw">final</span> themeNotifier = <span class="ty">ValueNotifier</span>&lt;<span class="ty">String</span>&gt;(<span class="st">'system'</span>);
+
+<span class="cm">// MaterialApp wraps in ValueListenableBuilder</span>
+<span class="ty">ValueListenableBuilder</span>&lt;<span class="ty">String</span>&gt;(
+  valueListenable: themeNotifier,
+  builder: (_, mode, __) => <span class="ty">MaterialApp</span>(
+    theme: mode == <span class="st">'dark'</span> ? QuixTheme.theme : QuixTheme.lightTheme,
+    <span class="cm">// ...</span>
+  ),
+)
+
+<span class="cm">// ThemePicker changes one line, entire app re-themes instantly</span>
+themeNotifier.value = <span class="st">'chrome'</span>;
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="design-service" class="section">
+  <h1>Service Layer Architecture</h1>
+  <p class="hero-sub">Quix separates business logic from UI using a service layer. Screens don't talk to Firebase directly — they ask services. This makes debugging easier: if points are wrong, check PointsService, not every screen.</p>
+
+  <h2>Layer architecture</h2>
+  <pre><code><span class="cm">┌─────────────────────────────────────────────────────┐</span>
+<span class="cm">│  SCREENS (UI layer)                                 │</span>
+<span class="cm">│  home_screen, quiz_play_screen, ai_quiz_screen...   │</span>
+<span class="cm">│  Only knows: show data, react to user taps          │</span>
+<span class="cm">└──────────────────────┬──────────────────────────────┘</span>
+                       <span class="cm">│ calls services</span>
+<span class="cm">┌──────────────────────▼──────────────────────────────┐</span>
+<span class="cm">│  SERVICES (business logic layer)                    │</span>
+<span class="cm">│  PointsService, AiService, SoundService...          │</span>
+<span class="cm">│  Knows: how to calculate points, call AI, play sound│</span>
+<span class="cm">└──────────────────────┬──────────────────────────────┘</span>
+                       <span class="cm">│ reads/writes</span>
+<span class="cm">┌──────────────────────▼──────────────────────────────┐</span>
+<span class="cm">│  DATA LAYER                                         │</span>
+<span class="cm">│  Firebase RTDB, Supabase, SharedPreferences, Files  │</span>
+<span class="cm">└─────────────────────────────────────────────────────┘</span>
+<span class="lang-label">ARCHITECTURE</span></code></pre>
+
+  <h2>Example: how points flow through layers</h2>
+  <pre><code><span class="cm">// 1. SCREEN — user answers correctly</span>
+_applyScoreDelta(<span class="nm">100</span>);  <span class="cm">// local UI update (instant)</span>
+_commitPoints(delta: <span class="nm">100</span>);  <span class="cm">// tells service to persist</span>
+
+<span class="cm">// 2. SERVICE — PointsService.applyDelta()</span>
+<span class="kw">await</span> _userRef(uid).runTransaction((current) {
+  data[<span class="st">'points'</span>] = prevPoints + delta;
+  <span class="kw">return</span> Transaction.success(data);
+});
+pointsNotifier.value = updatedPoints;  <span class="cm">// notify home screen</span>
+<span class="kw">await</span> _updateBoard(_lbRef(uid), delta: delta);  <span class="cm">// update leaderboard</span>
+
+<span class="cm">// 3. DATA — Firebase RTDB</span>
+<span class="cm">// users/{uid}/points  +100</span>
+<span class="cm">// leaderboard/{uid}/score  +100</span>
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="design-firebase" class="section">
+  <h1>Firebase Architecture</h1>
+  <p class="hero-sub">Quix uses Firebase Realtime Database (RTDB) — a JSON tree stored in the cloud with real-time sync. Understanding the data structure is essential for debugging points, leaderboard, and daily progress issues.</p>
+
+  <h2>RTDB data structure</h2>
+  <pre><code><span class="cm">// Firebase RTDB is a giant nested JSON object</span>
+{
+  <span class="st">"users"</span>: {
+    <span class="st">"{uid}"</span>: {
+      <span class="st">"points"</span>: <span class="nm">600</span>,           <span class="cm">// current wallet balance</span>
+      <span class="st">"aiTokens"</span>: <span class="nm">1</span>,
+      <span class="st">"displayName"</span>: <span class="st">"Gaurav"</span>,
+      <span class="st">"dailyProgress"</span>: {
+        <span class="st">"2024-04-07"</span>: {
+          <span class="st">"quizzes"</span>: <span class="nm">3</span>,
+          <span class="st">"correct"</span>: <span class="nm">12</span>,
+          <span class="st">"score"</span>: <span class="nm">600</span>
+        }
+      },
+      <span class="st">"packs"</span>: {
+        <span class="st">"{packId}"</span>: { <span class="st">"title"</span>: <span class="st">"Physics"</span>, ... }
+      }
+    }
+  },
+  <span class="st">"leaderboard"</span>: {
+    <span class="st">"{uid}"</span>: {
+      <span class="st">"score"</span>: <span class="nm">5250</span>,          <span class="cm">// cumulative ALL TIME</span>
+      <span class="st">"name"</span>: <span class="st">"Gaurav"</span>
+    }
+  },
+  <span class="st">"rooms"</span>: { ... }           <span class="cm">// multiplayer rooms</span>
+}
+<span class="lang-label">JSON</span></code></pre>
+
+  <h2>Reading from Firebase</h2>
+  <pre><code><span class="cm">// One-time read (get)</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> FirebaseDatabase.instance
+    .ref(<span class="st">'users/$uid/points'</span>)
+    .get();
+
+<span class="kw">if</span> (snap.exists && snap.value != <span class="bl">null</span>) {
+  <span class="kw">final</span> pts = (snap.value <span class="kw">as</span> <span class="ty">num</span>).toInt();
+}
+
+<span class="cm">// Read entire user object</span>
+<span class="kw">final</span> snap = <span class="kw">await</span> FirebaseDatabase.instance
+    .ref(<span class="st">'users/$uid'</span>)
+    .get();
+<span class="kw">final</span> data = <span class="ty">Map</span>&lt;<span class="ty">String</span>, <span class="kw">dynamic</span>&gt;.from(snap.value <span class="kw">as</span> <span class="ty">Map</span>);
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Writing with transaction (safe concurrent update)</h2>
+  <pre><code><span class="cm">// runTransaction prevents race conditions when two devices update simultaneously</span>
+<span class="kw">await</span> ref.runTransaction((current) {
+  <span class="kw">final</span> data = current <span class="kw">is</span> <span class="ty">Map</span>
+      ? <span class="ty">Map</span>&lt;<span class="ty">Object</span>?, <span class="ty">Object</span>?&gt;.from(current)
+      : &lt;<span class="ty">Object</span>?, <span class="ty">Object</span>?&gt;{};     <span class="cm">// handle null (new user)</span>
+
+  <span class="kw">final</span> prev = (data[<span class="st">'points'</span>] <span class="kw">as</span> <span class="ty">num</span>?)?.toInt() ?? <span class="nm">0</span>;
+  data[<span class="st">'points'</span>] = prev + delta;  <span class="cm">// add to existing</span>
+
+  <span class="kw">return</span> Transaction.success(data);  <span class="cm">// commit</span>
+  <span class="cm">// return Transaction.abort();     // abort if something's wrong</span>
+});
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card gold">
+    <div class="card-title"><span class="dot gold"></span>Why transactions instead of set()</div>
+    If two quiz games finish at the same time and both read points=100, add 50, then write 150 — one write overwrites the other and you lose 50 points. A transaction reads AND writes atomically — Firebase retries if another write happened between your read and write.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="design-fallback" class="section">
+  <h1>AI Fallback Chain</h1>
+  <p class="hero-sub">Quix calls 6 AI APIs. The fallback chain ensures if one fails (rate limit, no key, timeout), the next one picks up. Understanding this helps debug "generation failed" errors.</p>
+
+  <h2>How the chain works</h2>
+  <pre><code><span class="cm">// For Research tier: ALL 6 run simultaneously</span>
+<span class="kw">final</span> results = <span class="kw">await</span> Future.wait([
+  _tryGeminiPro(prompt, count),    <span class="cm">// Gemini 2.5 Flash</span>
+  _tryClaudeHaiku(prompt, count),  <span class="cm">// Claude Haiku</span>
+  _tryGroqLlama(prompt, count),    <span class="cm">// LLaMA 3.3 70B</span>
+  _tryGroqGemma(prompt, count),    <span class="cm">// Gemma 2 9B</span>
+  _tryMistral(prompt, count),      <span class="cm">// Mistral Small</span>
+  _tryCohere(prompt, count),       <span class="cm">// Cohere Command R+</span>
+]);
+<span class="cm">// Each returns null if it fails — Future.wait still completes</span>
+
+<span class="cm">// For free/basic tier: sequential fallback</span>
+<span class="kw">for</span> (<span class="kw">final</span> (label, fn) <span class="kw">in</span> [
+  (<span class="st">'Gemini'</span>, _tryGemini),
+  (<span class="st">'Groq'</span>,   _tryGroq),
+  (<span class="st">'Mistral'</span>, _tryMistral),
+]) {
+  <span class="kw">final</span> result = <span class="kw">await</span> fn(prompt, count);
+  <span class="kw">if</span> (result != <span class="bl">null</span>) <span class="kw">return</span> result;  <span class="cm">// first success wins</span>
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <h2>Each model method structure</h2>
+  <pre><code><span class="ty">Future</span>&lt;<span class="ty">List</span>&lt;<span class="ty">AiQuestion</span>&gt;?&gt; _tryGeminiPro(<span class="ty">String</span> prompt, <span class="ty">int</span> count) <span class="kw">async</span> {
+  <span class="kw">final</span> key = AppConfigService.geminiApiKey;
+  <span class="kw">if</span> (key.isEmpty) <span class="kw">return</span> <span class="bl">null</span>;   <span class="cm">// 1. No API key → skip</span>
+
+  <span class="kw">try</span> {
+    <span class="kw">final</span> res = <span class="kw">await</span> http.post(...).timeout(Duration(seconds: <span class="nm">45</span>));
+
+    <span class="kw">if</span> (res.statusCode != <span class="nm">200</span>) <span class="kw">return</span> <span class="bl">null</span>;  <span class="cm">// 2. API error → skip</span>
+
+    <span class="kw">final</span> text = ... <span class="kw">as</span> <span class="ty">String</span>?;
+    <span class="kw">return</span> text != <span class="bl">null</span> ? _parseQuestions(text, count) : <span class="bl">null</span>;
+    <span class="cm">// 3. Parse JSON → return questions, or null if parse fails</span>
+
+  } <span class="kw">catch</span> (e) {
+    debugPrint(<span class="st">'[PremiumTier] Gemini error: $e'</span>);
+    <span class="kw">return</span> <span class="bl">null</span>;                   <span class="cm">// 4. Any exception → skip, don't crash</span>
+  }
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card green">
+    <div class="card-title"><span class="dot green"></span>Debugging "generation failed"</div>
+    In Logcat search for <code>[PremiumTier]</code> or <code>[AiService]</code>. You'll see which models were tried and which returned null. Common causes: API key missing in Supabase vault, model rate limit (429 status), timeout (slow network), or JSON parse error (model returned non-JSON).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flow-startup" class="section">
+  <h1>App Startup Flow</h1>
+  <p class="hero-sub">What happens in the first 3 seconds after the user taps the Quix icon. Understanding this flow explains most "blank screen" and "data not loading" bugs.</p>
+
+  <pre><code><span class="cm">// main.dart — sequential startup</span>
+<span class="kw">void</span> main() <span class="kw">async</span> {
+  WidgetsFlutterBinding.ensureInitialized();  <span class="cm">// Flutter engine ready</span>
+  <span class="kw">await</span> Firebase.initializeApp();             <span class="cm">// Firebase SDK ready</span>
+
+  GoogleAuthService.instance.init();          <span class="cm">// set up Google listener</span>
+  <span class="kw">await</span> AppConfigService.init();             <span class="cm">// load API keys from Supabase</span>
+
+  runApp(<span class="kw">const</span> QuixApp());
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="flow-box">
+    <div class="flow-node">main()</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Firebase init</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">runApp → QuixApp</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">_AuthGate builds</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">_init() runs</div>
+  </div>
+
+  <pre><code><span class="cm">// _AuthGateState._init() — runs after app is visible</span>
+<span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; _init() <span class="kw">async</span> {
+  <span class="kw">await</span> SoundService().loadPrefs();           <span class="cm">// load sound on/off pref</span>
+  unawaited(SoundService().startAmbient());    <span class="cm">// start music</span>
+  unawaited(NotificationService.instance.restoreScheduledReminders());
+
+  <span class="kw">try</span> {
+    <span class="cm">// Subscribe to FCM topic (run once — persists in Firebase)</span>
+    <span class="kw">await</span> FirebaseMessaging.instance.subscribeToTopic(<span class="st">'all_users'</span>);
+  } <span class="kw">catch</span> (_) {}
+
+  <span class="kw">final</span> user = <span class="kw">await</span> _signIn();              <span class="cm">// anonymous sign-in</span>
+
+  <span class="kw">if</span> (user != <span class="bl">null</span>) {
+    <span class="kw">final</span> deviceId = <span class="kw">await</span> PackStorageService.getAndroidId();
+    <span class="kw">await</span> TesterService.init(deviceId: deviceId);  <span class="cm">// dev whitelist</span>
+    <span class="kw">await</span> PackStorageService.ensureUserRoot(user.uid);  <span class="cm">// create DB node</span>
+    unawaited(_runIdentityInit(user.uid));      <span class="cm">// set display name</span>
+    PresenceService.start(user.uid);           <span class="cm">// online indicator</span>
+    unawaited(PointsService.primeCache(user.uid)); <span class="cm">// cache points</span>
+  }
+
+  setState(() => _ready = <span class="bl">true</span>);  <span class="cm">// show HomeScreen</span>
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card gold">
+    <div class="card-title"><span class="dot gold"></span>Logcat health check on startup</div>
+    You should see these in order: <code>AppConfigService loaded from Supabase</code> → <code>[Notif] FCM token:</code> → <code>[PackStorage] androidId=</code> → <code>[SoundService] prefs loaded</code> → <code>[Notif] All channels created</code>. If any are missing, that feature is broken.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flow-quiz" class="section">
+  <h1>Quiz Play Flow</h1>
+  <p class="hero-sub">How a quiz session works end-to-end — from opening the pack to committing points to Firebase.</p>
+
+  <pre><code><span class="cm">// QuizPlayScreen opens</span>
+initState() {
+  _bootstrapPoints();   <span class="cm">// read current points from Firebase</span>
+  _loadQuestions();     <span class="cm">// decrypt/fetch questions from pack</span>
+}
+
+<span class="cm">// _bootstrapPoints</span>
+<span class="kw">final</span> points = <span class="kw">await</span> PointsService.getGlobalPoints(uid);
+setState(() {
+  _score = points;               <span class="cm">// local display score = Firebase value</span>
+  _startingGlobalPoints = points; <span class="cm">// remember where we started</span>
+  _sessionScore = <span class="nm">0</span>;            <span class="cm">// session delta starts at 0</span>
+});
+<span class="lang-label">DART</span></code></pre>
+
+  <pre><code><span class="cm">// User answers a question</span>
+<span class="kw">void</span> _onAnswer(<span class="ty">int</span> index) {
+  _answered = <span class="bl">true</span>;
+  _selectedAnswer = index;
+
+  <span class="kw">if</span> (index == correct) {
+    _applyScoreDelta(<span class="nm">100</span> * _streakMultiplier);  <span class="cm">// +100 to local score</span>
+    SoundService().correct();
+  } <span class="kw">else</span> {
+    _applyScoreDelta(-<span class="nm">20</span>);                     <span class="cm">// -20 penalty</span>
+    SoundService().wrong();
+  }
+}
+
+<span class="cm">// _applyScoreDelta — updates local state instantly (no Firebase wait)</span>
+<span class="kw">void</span> _applyScoreDelta(<span class="ty">int</span> delta) {
+  setState(() {
+    _score = max(<span class="nm">0</span>, _score + delta);      <span class="cm">// floor at 0</span>
+    _sessionScore += delta;                 <span class="cm">// track session total</span>
+  });
+}
+<span class="lang-label">DART</span></code></pre>
+
+  <pre><code><span class="cm">// Quiz ends — commit to Firebase</span>
+<span class="cm">// _pendingCommitDelta = (_score - _startingGlobalPoints) - _committedDelta</span>
+<span class="kw">await</span> _commitPoints(delta: _pendingCommitDelta, countGame: <span class="bl">true</span>);
+unawaited(_logDailyProgress());   <span class="cm">// update dashboard data</span>
+<span class="lang-label">DART</span></code></pre>
+
+  <div class="card blue">
+    <div class="card-title"><span class="dot blue"></span>Why two score variables?</div>
+    <code>_score</code> = user's total global balance displayed on screen. <code>_sessionScore</code> = delta earned this session only. Leaderboard gets the session delta, wallet gets the new total. This prevents the leaderboard score drifting away from the wallet — both get the same delta.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flow-ai" class="section">
+  <h1>AI Generation Flow</h1>
+  <p class="hero-sub">What happens between "Generate Quiz" tap and seeing questions — and where it can go wrong.</p>
+
+  <pre><code><span class="cm">// 1. Validate + gate</span>
+<span class="kw">if</span> (_exceedsLimit) { <span class="kw">return</span>; }         <span class="cm">// page limit check</span>
+<span class="kw">final</span> gateOk = <span class="kw">await</span> _unlockTierGate(); <span class="cm">// show ads/payment if needed</span>
+<span class="kw">if</span> (!gateOk) <span class="kw">return</span>;
+
+<span class="cm">// 2. Document processing</span>
+<span class="kw">final</span> docResult = <span class="kw">await</span> DocumentService().process(_pickedFile!);
+cleanedText = docResult.cleanedText;    <span class="cm">// extracted text</span>
+cleanedText += _preferencesSuffix;     <span class="cm">// append user prefs</span>
+
+<span class="cm">// 3. Duplicate check</span>
+<span class="cm">// SHA-256 hash of content → check if pdfHashes/{hash} exists in RTDB</span>
+<span class="cm">// If yes → show "already generated" dialog</span>
+
+<span class="cm">// 4. Cache check</span>
+<span class="kw">final</span> cached = <span class="kw">await</span> QuizCacheService.instance.load(hash, count, difficulty);
+<span class="kw">if</span> (cached != <span class="bl">null</span>) { <span class="kw">await</span> _launch(cached); <span class="kw">return</span>; } <span class="cm">// instant!</span>
+
+<span class="cm">// 5. AI extraction</span>
+<span class="kw">if</span> (_selectedTierIdx == _kTierResearch) {
+  <span class="cm">// 6 models parallel → majority vote merge</span>
+  questions = <span class="kw">await</span> PremiumTierService.instance.extractMultiModel(...);
+} <span class="kw">else</span> {
+  <span class="cm">// Single DiagramService call (Gemini vision for PDFs)</span>
+  questions = <span class="kw">await</span> DiagramService.instance.extractAndAttach(...);
+}
+
+<span class="cm">// 6. Save pack to Firebase + local cache</span>
+<span class="kw">await</span> PackStorageService.savePack(pack);
+<span class="kw">await</span> QuizCacheService.instance.save(hash, count, difficulty, questions);
+<span class="lang-label">DART</span></code></pre>
+
+  <table>
+    <tr><th>Step fails</th><th>Symptom</th><th>Check in Logcat</th></tr>
+    <tr><td>API key missing</td><td>"Generation failed" instantly</td><td><code>AppConfigService: ✗ not set</code></td></tr>
+    <tr><td>Network timeout</td><td>Spinner for 45s then fail</td><td><code>TimeoutException</code></td></tr>
+    <tr><td>Model returns non-JSON</td><td>"Generation failed"</td><td><code>[PremiumTier] parse error</code></td></tr>
+    <tr><td>Document too small</td><td>"Document appears empty"</td><td><code>cleanedText.length &lt; 50</code></td></tr>
+    <tr><td>Cache hit</td><td>Instant generation (good!)</td><td><code>[AiQuiz] Cache HIT</code></td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flow-points" class="section">
+  <h1>Points &amp; Leaderboard</h1>
+  <p class="hero-sub">Why your header shows 600 but leaderboard shows 5250 — and how to keep them in sync.</p>
+
+  <pre><code><span class="cm">// THREE separate numbers — all start from same delta but diverge over time</span>
+
+<span class="cm">// 1. Wallet — users/{uid}/points</span>
+<span class="cm">//    Your current balance. Goes UP on correct answers, DOWN on wrong.</span>
+<span class="cm">//    Can go to 0 minimum. This is what the header shows.</span>
+
+<span class="cm">// 2. Leaderboard — leaderboard/{uid}/score</span>
+<span class="cm">//    Cumulative total. Also gets deltas (same +/- as wallet).</span>
+<span class="cm">//    In theory synced with wallet, but can drift if:</span>
+<span class="cm">//    • You edited wallet directly in Firebase Console</span>
+<span class="cm">//    • An old app version only wrote to one path</span>
+
+<span class="cm">// 3. Weekly leaderboard — leaderboard_weekly/{uid}/score</span>
+<span class="cm">//    Resets every week based on weekKey field</span>
+
+<span class="cm">// Fix drift — run once in development console or a debug button:</span>
+<span class="kw">static</span> <span class="ty">Future</span>&lt;<span class="kw">void</span>&gt; syncLeaderboardToWallet(<span class="ty">String</span> uid) <span class="kw">async</span> {
+  <span class="kw">final</span> walletPts = <span class="kw">await</span> PointsService.getGlobalPoints(uid);
+  <span class="kw">await</span> FirebaseDatabase.instance
+      .ref(<span class="st">'leaderboard/$uid/score'</span>).set(walletPts);
+  <span class="kw">await</span> FirebaseDatabase.instance
+      .ref(<span class="st">'leaderboard_weekly/$uid/score'</span>).set(walletPts);
+}
+<span class="lang-label">DART</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="flow-debug" class="section">
+  <h1>Reading Flutter Errors</h1>
+  <p class="hero-sub">Flutter error messages are verbose but follow patterns. Here's how to decode the most common ones.</p>
+
+  <h2>RenderFlex overflowed</h2>
+  <pre><code><span class="cm">══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞════</span>
+<span class="cm">A RenderFlex overflowed by 12 pixels on the bottom.</span>
+<span class="cm">The relevant widget: Column</span>
+<span class="cm">Column:file:///progress_dashboard_screen.dart:424:20</span>
+
+<span class="cm">→ Translation: A Column (vertical layout) is too tall for its container.</span>
+<span class="cm">→ Fix options:</span>
+<span class="cm">   1. Wrap in SingleChildScrollView</span>
+<span class="cm">   2. Wrap overflow child in Expanded</span>
+<span class="cm">   3. Reduce sizes/padding inside the Column</span>
+<span class="cm">   4. Wrap in ClipRect to hide overflow visually</span>
+<span class="lang-label">FLUTTER ERROR</span></code></pre>
+
+  <h2>setState after dispose</h2>
+  <pre><code><span class="cm">FlutterError: setState() called after dispose()</span>
+<span class="cm">This error happens if you call setState() on a State object</span>
+<span class="cm">for a widget that no longer appears in the widget tree.</span>
+
+<span class="cm">→ Translation: async function completed after user navigated away.</span>
+<span class="cm">→ Fix: always check mounted before setState after any await</span>
+
+<span class="cm">WRONG:</span>
+<span class="kw">final</span> data = <span class="kw">await</span> Firebase.ref.get();
+setState(() => _data = data);  <span class="cm">// ← user may have left screen</span>
+
+<span class="cm">CORRECT:</span>
+<span class="kw">final</span> data = <span class="kw">await</span> Firebase.ref.get();
+<span class="kw">if</span> (!mounted) <span class="kw">return</span>;          <span class="cm">// ← safety check</span>
+setState(() => _data = data);
+<span class="lang-label">FLUTTER ERROR</span></code></pre>
+
+  <h2>Undefined method / getter</h2>
+  <pre><code><span class="cm">The method 'instance' isn't defined for the type 'MonetizationService'</span>
+
+<span class="cm">→ Translation: You're calling .instance on a class that doesn't have it.</span>
+<span class="cm">→ Fix: check how the class is supposed to be accessed.</span>
+<span class="cm">   Look at the class definition for:</span>
+<span class="cm">   - static final instance = ...  → use ClassName.instance</span>
+<span class="cm">   - factory ClassName() => ...   → use ClassName() (no .instance)</span>
+<span class="cm">   - No singleton at all          → use ClassName() or create instance</span>
+<span class="lang-label">DART ERROR</span></code></pre>
+
+  <h2>Null check operator on null</h2>
+  <pre><code><span class="cm">Null check operator used on a null value</span>
+
+<span class="cm">→ Translation: You used ! but the value was actually null.</span>
+<span class="cm">→ Find the ! in the stack trace file:line and replace:</span>
+
+<span class="cm">WRONG:  final uid = FirebaseAuth.instance.currentUser!.uid;</span>
+<span class="cm">CORRECT:</span>
+<span class="kw">final</span> uid = FirebaseAuth.instance.currentUser?.uid;
+<span class="kw">if</span> (uid == <span class="bl">null</span>) <span class="kw">return</span>;
+<span class="cm">// use uid safely below</span>
+<span class="lang-label">DART ERROR</span></code></pre>
+
+  <h2>Permission denied (Firebase)</h2>
+  <pre><code><span class="cm">[Identity] initIdentity error (non-fatal):</span>
+<span class="cm">[firebase_database/unknown] Permission denied</span>
+
+<span class="cm">→ Translation: Your RTDB security rules blocked a read or write.</span>
+<span class="cm">→ Debug steps:</span>
+<span class="cm">   1. Firebase Console → RTDB → Rules → Simulator</span>
+<span class="cm">   2. Set Operation: Read or Write</span>
+<span class="cm">   3. Set Location: e.g. /users/{yourUid}/dailyProgress</span>
+<span class="cm">   4. Set Auth: authenticated with your UID</span>
+<span class="cm">   5. Click "Run" → see which rule is blocking</span>
+
+<span class="cm">→ Common fix: add the path to RTDB rules under users/$uid with:</span>
+<span class="cm">   ".read": "auth.uid == $uid"</span>
+<span class="cm">   ".write": "auth.uid == $uid"</span>
+<span class="lang-label">FIREBASE</span></code></pre>
+
+  <h2>Duplicate definition</h2>
+  <pre><code><span class="cm">The name '_MiniStat' is already defined.</span>
+<span class="cm">ai_quiz_screen.dart(1621, 7): The first definition of this name.</span>
+
+<span class="cm">→ Translation: A class or method is declared twice in the same file.</span>
+<span class="cm">→ Fix: search the file for 'class _MiniStat' — delete the duplicate.</span>
+<span class="cm">→ In VS Code: Ctrl+F → search class _MiniStat → find which one to delete.</span>
+<span class="lang-label">DART ERROR</span></code></pre>
+
+  <h2>Quick Logcat filters for Quix</h2>
+  <table>
+    <tr><th>Filter</th><th>Shows</th></tr>
+    <tr><td><code>[SoundService]</code></td><td>Sound play/stop/error events</td></tr>
+    <tr><td><code>[Notif]</code></td><td>Notification scheduling, FCM token, channel creation</td></tr>
+    <tr><td><code>[GoogleAuth]</code></td><td>Sign-in result, migration, photo sync</td></tr>
+    <tr><td><code>[PackStorage]</code></td><td>androidId, identity init, pack save/load</td></tr>
+    <tr><td><code>[PremiumTier]</code></td><td>Which AI models succeeded, merge result</td></tr>
+    <tr><td><code>[AiQuiz]</code></td><td>Cache hit/miss, question count</td></tr>
+    <tr><td><code>[Billing]</code></td><td>Purchase events, entitlement grants</td></tr>
+    <tr><td><code>[Points]</code></td><td>Commit failures, delta values</td></tr>
+    <tr><td><code>Permission denied</code></td><td>Firebase rules blocking</td></tr>
+    <tr><td><code>AppConfigService</code></td><td>API key load status (✓ or ✗)</td></tr>
+  </table>
+</div>
+
+</div> <!-- end .main -->
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
